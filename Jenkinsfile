@@ -52,12 +52,12 @@ node('Server CICD') {
         }
     }
 
-    stage('Release') {
+    def pom = readFile 'pom.xml'
+    def project = new XmlSlurper().parseText(pom)
+    String version = project.version.toString()
+    String tarName = "volcano-${version}-release-pack.tar.gz"
 
-        def pom = readFile 'pom.xml'
-        def project = new XmlSlurper().parseText(pom)
-        def version = project.version.toString()
-        def tarName = "volcano-${version}-release-pack.tar.gz"
+    stage('Release') {
 
         @NonCPS
         def newVersion = {
