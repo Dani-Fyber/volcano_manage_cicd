@@ -1,0 +1,66 @@
+node('Server CI Slave') {
+
+    stage('Checkout') {
+        checkout([
+                $class           : 'GitSCM',
+                branches         : scm.branches,
+                extensions       : scm.extensions + [[$class: 'LocalBranch', localBranch: '']],
+                userRemoteConfigs: scm.userRemoteConfigs
+        ])
+    }
+
+    String branch = env.BRANCH_NAME.toString()
+    stage('Maven build') {
+
+
+        echo branch
+        //returns a set of git revisions with the name of the committer
+        @NonCPS
+        def commitList = {
+            def changes = ""
+            currentBuild.changeSets.each { set ->
+                set.each { entry ->
+                    changes += "${entry.commitId} - ${entry.msg} \n by ${entry.author.fullName}\n"
+                }
+            }
+            return changes
+        }
+
+        def handleFailures = {
+            echo "handleFailures "
+        }
+
+        try {
+            withMaven(jdk: 'JDK 8 update 66', maven: 'Maven 3.0.5') {
+                //sh "mvn -Dmaven.test.failure.ignore=true clean install -Dsetup-profile=automation"
+            }
+            //if (currentBuild.result("UNSTABLE")) {
+                handleFailures()
+            //}
+        } catch (Exception e) {
+            manager.buildFailure()
+            handleFailures()
+            throw e
+        }
+    }
+
+    stage('Release') {
+
+        @NonCPS
+        def newVersion = {
+        echo "new version"
+        }
+    }
+
+
+    if (!branch.startsWith('ST-')) {
+        stage('Deploy') {
+
+            def incrementVersion = {
+                echo "incrementVersion"
+            }
+
+        }
+        if (branch == 'develop' || branch == 'master') sh "rm releases.txt"
+    }
+}
